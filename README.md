@@ -1,17 +1,13 @@
 # Intelligent-Process-Automation
 
 ## Overview
-This project automates the extraction and processing of invoice data from invoice images. It utilizes **Pytesseract** to extract text from invoice images (PNG, JPG, JPEG). The extracted text is then passed to the **Gemini API**, which processes the text and structures the information into a **JSON format**. The structured data is subsequently stored in a **PostgreSQL database (`invoice_db`)** within the `invoices` table. The entire application runs within a **Python virtual environment (`invoice` virtual environment)** to ensure dependency isolation and maintainability.
-
----
+This project automates the extraction and processing of invoice data from invoice images. It utilizes **Pytesseract** to extract text from invoice images (PNG, JPG, JPEG). The extracted text is then passed to the **Gemini-1.5-Pro** model via the Gemini API, which processes the text and structures the information into a JSON format. The structured data is subsequently stored in a **PostgreSQL** database (`invoice_db`) within the `invoices` table. The entire application runs within a **Python virtual environment** (`invoice virtual environment`) to ensure dependency isolation and maintainability.
 
 ## Features
-- Extracts text from invoice images using **Pytesseract**, a powerful OCR tool.
-- Sends extracted text to **Gemini API**, which processes and structures the data into JSON format.
-- Stores structured invoice details in a **PostgreSQL database (`invoice_db`)** for easy retrieval and management.
-- Runs inside a **virtual environment (`invoice`)** to ensure smooth dependency management.
-- Provides a structured and automated approach for handling invoice processing, reducing manual effort and errors.
-
+- Extracts text from invoice images using **Pytesseract**.
+- Processes and structures extracted text into JSON using **Gemini-1.5-Pro**.
+- Stores structured invoice data in a **PostgreSQL** database.
+- Runs within a Python virtual environment for better dependency management.
 ---
 
 ## Setup and Installation
