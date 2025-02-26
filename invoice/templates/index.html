@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Processing System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #0d6efd;
+        }
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Invoice Processing System</h3>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-warning">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <h5>Upload Invoice(s)</h5>
+                                <p class="text-muted">Upload a single invoice image or a folder of invoices to process</p>
+                            </div>
+                            
+                            <!-- Single File Upload -->
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Upload Single Invoice</label>
+                                <div class="upload-area" id="singleUploadArea">
+                                    <p>Drag & drop a file here or click to browse</p>
+                                    <p class="text-muted small">Supported formats: PNG, JPG, JPEG</p>
+                                    <input type="file" id="file" name="file" class="hide" accept=".png,.jpg,.jpeg">
+                                </div>
+                                <div id="selectedFile" class="mt-2"></div>
+                            </div>
+                            
+                            <div class="text-center my-3">- OR -</div>
+                            
+                            
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">Process Invoice(s)</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Single file upload
+        const singleUploadArea = document.getElementById('singleUploadArea');
+        const fileInput = document.getElementById('file');
+        const selectedFile = document.getElementById('selectedFile');
+        
+        singleUploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        singleUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            singleUploadArea.style.borderColor = '#0d6efd';
+        });
+        
+        singleUploadArea.addEventListener('dragleave', () => {
+            singleUploadArea.style.borderColor = '#ccc';
+        });
+        
+        singleUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            singleUploadArea.style.borderColor = '#ccc';
+            fileInput.files = e.dataTransfer.files;
+            updateFileDisplay();
+        });
+        
+        fileInput.addEventListener('change', updateFileDisplay);
+        
+        function updateFileDisplay() {
+            if (fileInput.files.length > 0) {
+                selectedFile.innerHTML = `<div class="alert alert-success">Selected: ${fileInput.files[0].name}</div>`;
+            } else {
+                selectedFile.innerHTML = '';
+            }
+        }
+        
+ 
+    </script>
+</body>
+</html>
