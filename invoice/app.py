@@ -1,12 +1,10 @@
 import os
-#import shutil
-#import tempfile
+import json
 from flask import Flask, request, render_template, jsonify, redirect, url_for, flash, session
 from werkzeug.utils import secure_filename
 from ocr_genai import gemini_json_output
 from extract_text import extract_text
 from database import insert_invoice
-import json
 
 app = Flask(__name__)
 app.secret_key = "invoice_processor_secret_key"  
@@ -21,7 +19,6 @@ DB_CONFIG = {
     "port": "5432"
 }
 
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -30,51 +27,58 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    
     if 'processed_invoices' in session:
         session.pop('processed_invoices')
-    return render_template('index.html')
+    
+    # Get list of files currently in the temp folder
+    temp_files = []
+    for filename in os.listdir(UPLOAD_FOLDER):
+        if allowed_file(filename):
+            temp_files.append(filename)
+    
+    return render_template('index.html', temp_files=temp_files)
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload_file', methods=['POST'])
 def upload_file():
+    if 'file' not in request.files:
+        flash('No file selected')
+        return redirect(url_for('index'))
     
-    if 'file' not in request.files and 'folder' not in request.files:
-        flash('No file or folder selected')
-        return redirect(request.url)
+    file = request.files['file']
+    if file.filename == '':
+        flash('No file selected')
+        return redirect(url_for('index'))
     
-    processed_invoices = []
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        flash(f'File {filename} uploaded successfully', 'success')
+    else:
+        flash('Invalid file type. Please upload PNG, JPG, JPEG, or PDF files.', 'error')
+    
+    return redirect(url_for('index'))
+
+@app.route('/process_invoices', methods=['POST'])
+def process_invoices():
+    # Get all files from the temp folder
     uploaded_files = []
-    
-    # Single file upload
-    if 'file' in request.files:
-        file = request.files['file']
-        if file.filename == '':
-            flash('No file selected')
-            return redirect(request.url)
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+    for filename in os.listdir(UPLOAD_FOLDER):
+        if allowed_file(filename):
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
             uploaded_files.append(filepath)
     
-    # Folder upload (multiple files)
-    # elif 'folder' in request.files:
-    #     files = request.files.getlist('folder')
-    #     for file in files:
-    #         if file.filename != '' and allowed_file(file.filename):
-    #             filename = secure_filename(file.filename)
-    #             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    #             file.save(filepath)
-    #             uploaded_files.append(filepath)
+    if not uploaded_files:
+        flash('No files to process. Please upload files first.')
+        return redirect(url_for('index'))
+    
+    processed_invoices = []
     
     # Process each uploaded file
     for filepath in uploaded_files:
         try:
-            
             extracted_text = extract_text(filepath)
             
-           
             user_prompt = f'''The following is the extracted text from an invoice:
 "{extracted_text}"
 Convert this extracted text into a structured JSON format, ensuring appropriate keys for:
@@ -106,10 +110,8 @@ If any field is missing, return `null`. The JSON output should follow this struc
 "payment_terms": "value"
 Provide the JSON output directly, without any additional text or code blocks.
 '''
-            
-            
             invoice_json = gemini_json_output(user_prompt)
-        
+            print(invoice_json)
             if not invoice_json:  # Check if JSON output is empty
                 raise ValueError("Data extraction failed. No JSON output received.")
 
@@ -127,8 +129,7 @@ Provide the JSON output directly, without any additional text or code blocks.
             insert_result = insert_invoice(data, DB_CONFIG)
 
             if insert_result != "Success":  # If insert_invoice() returns an error
-                flash(insert_result, 'error')  # Show error message
-                return redirect(url_for('index'))
+                raise ValueError(f"Database error: {insert_result}")
 
             processed_result = {
                 'filename': os.path.basename(filepath),
@@ -153,20 +154,30 @@ Provide the JSON output directly, without any additional text or code blocks.
             }
             processed_invoices.append(processed_result)
     
-   
+    # Store processing results in session
     session['processed_invoices'] = processed_invoices
     
-   
+    # Clean up the temp folder after processing
     for filepath in uploaded_files:
         if os.path.exists(filepath):
             os.remove(filepath)
     
     return redirect(url_for('results'))
 
+@app.route('/clear_uploads', methods=['POST'])
+def clear_uploads():
+    # Clear all files from the temp folder
+    for filename in os.listdir(UPLOAD_FOLDER):
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.isfile(filepath):
+            os.remove(filepath)
+    
+    flash('All uploaded files have been cleared', 'success')
+    return redirect(url_for('index'))
+
 @app.route('/results')
 def results():
     processed_invoices = session.get('processed_invoices', [])
-    # print("🔍 Processed invoices:", processed_invoices)
     if not processed_invoices:
         flash('No invoices were processed. Please upload files first.')
         return redirect(url_for('index'))
@@ -175,5 +186,4 @@ def results():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
 
