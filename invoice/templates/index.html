@@ -45,13 +45,12 @@
                                 <p class="text-muted">Upload a single invoice image or a folder of invoices to process</p>
                             </div>
                             
-                            <!-- Single File Upload -->
                             <div class="mb-3">
                                 <label for="file" class="form-label">Upload Single Invoice</label>
                                 <div class="upload-area" id="singleUploadArea">
                                     <p>Drag & drop a file here or click to browse</p>
-                                    <p class="text-muted small">Supported formats: PNG, JPG, JPEG</p>
-                                    <input type="file" id="file" name="file" class="hide" accept=".png,.jpg,.jpeg">
+                                    <p class="text-muted small">Supported formats: PNG, JPG, JPEG, PDF</p>
+                                    <input type="file" id="file" name="file" class="hide" accept=".png,.jpg,.jpeg,.pdf">
                                 </div>
                                 <div id="selectedFile" class="mt-2"></div>
                             </div>
@@ -110,3 +109,135 @@
     </script>
 </body>
 </html>
+
+
+ 
+
+
+  <!-- <!DOCTYPE html>
+  <html lang="en">
+  
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Invoice Processing System</title>
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+      <style>
+          .upload-area {
+              border: 2px dashed #ccc;
+              border-radius: 8px;
+              padding: 30px;
+              text-align: center;
+              margin: 20px 0;
+              cursor: pointer;
+          }
+  
+          .upload-area:hover {
+              border-color: #0d6efd;
+          }
+  
+          .hide {
+              display: none;
+          }
+          
+          .file-preview {
+              margin-top: 15px;
+          }
+      </style>
+  </head>
+  
+  <body>
+      <div class="container mt-5">
+          <div class="row justify-content-center">
+              <div class="col-md-8">
+                  <div class="card">
+                      <div class="card-header bg-primary text-white">
+                          <h3 class="mb-0">Invoice Processing System</h3>
+                      </div>
+                      <div class="card-body">
+                          {% with messages = get_flashed_messages() %}
+                          {% if messages %}
+                          {% for message in messages %}
+                          <div class="alert alert-warning">{{ message }}</div>
+                          {% endfor %}
+                          {% endif %}
+                          {% endwith %}
+  
+                          <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+                              <div class="mb-4">
+                                  <h5>Upload Invoice(s)</h5>
+                                  <p class="text-muted">Upload single or multiple invoice files to process</p>
+                              </div>
+  
+                              <div class="upload-area" id="uploadArea">
+                                  <p><i class="bi bi-cloud-arrow-up"></i> Drag & drop files here or click to browse</p>
+                                  <p class="text-muted small">Supported formats: PNG, JPG, JPEG, PDF</p>
+                                  <input type="file" id="fileInput" name="files" class="hide" accept=".png,.jpg,.jpeg,.pdf" multiple>
+                              </div>
+                              
+                              <div id="filePreview" class="file-preview"></div>
+  
+                              <div class="text-center mt-4">
+                                  <button type="submit" class="btn btn-primary btn-lg" id="processBtn" disabled>Process Invoice(s)</button>
+                              </div>
+                          </form>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  
+      <script>
+          const uploadArea = document.getElementById('uploadArea');
+          const fileInput = document.getElementById('fileInput');
+          const filePreview = document.getElementById('filePreview');
+          const processBtn = document.getElementById('processBtn');
+  
+          uploadArea.addEventListener('click', () => {
+              fileInput.click();
+          });
+  
+          uploadArea.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              uploadArea.style.borderColor = '#0d6efd';
+          });
+  
+          uploadArea.addEventListener('dragleave', () => {
+              uploadArea.style.borderColor = '#ccc';
+          });
+  
+          uploadArea.addEventListener('drop', (e) => {
+              e.preventDefault();
+              uploadArea.style.borderColor = '#ccc';
+              fileInput.files = e.dataTransfer.files;
+              updateFileDisplay();
+          });
+  
+          fileInput.addEventListener('change', updateFileDisplay);
+  
+          function updateFileDisplay() {
+              filePreview.innerHTML = '';
+              
+              if (fileInput.files.length > 0) {
+                  for (let i = 0; i < fileInput.files.length; i++) {
+                      const file = fileInput.files[i];
+                      const fileDiv = document.createElement('div');
+                      fileDiv.className = 'alert alert-success';
+                      fileDiv.innerHTML = `<i class="bi bi-file-earmark"></i> ${file.name} (${formatFileSize(file.size)})`;
+                      filePreview.appendChild(fileDiv);
+                  }
+                  processBtn.disabled = false;
+              } else {
+                  processBtn.disabled = true;
+              }
+          }
+  
+          function formatFileSize(bytes) {
+              if (bytes < 1024) return bytes + ' bytes';
+              else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+              else return (bytes / 1048576).toFixed(1) + ' MB';
+          }
+      </script>
+  </body>
+  
+  </html> -->
