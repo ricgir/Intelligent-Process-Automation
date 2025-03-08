@@ -12,11 +12,11 @@ app.secret_key = "invoice_processor_secret_key"
 UPLOAD_FOLDER = "temp_uploads"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 DB_CONFIG = {
-    "dbname": "invoice_db",
+    "dbname": "railway",
     "user": "postgres",
-    "password": "postgres",
-    "host": "localhost",
-    "port": "5432"
+    "password": "lKyPkdyoIkhLCpUgaMNgVYZbmsdJGAAo",
+    "host": "hopper.proxy.rlwy.net",
+    "port": "15298"
 }
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
