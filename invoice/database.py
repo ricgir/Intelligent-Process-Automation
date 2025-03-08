@@ -1,18 +1,16 @@
 import psycopg2
+from psycopg2 import errors
 
 def insert_invoice(data, db_config):
     try:
-        # Connect to PostgreSQL
         conn = psycopg2.connect(**db_config)
-        cursor = conn.cursor()  # ✅ Ensure cursor is initialized
+        cursor = conn.cursor()
 
-        # SQL query
         query = """
         INSERT INTO invoices (invoice_number, invoice_date, due_date, vendor_name, customer_name, subtotal, taxes, total_amount, payment_terms)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
 
-        # Extract values from dictionary
         values = (
             data.get("invoice_number"),
             data.get("invoice_date"),
@@ -25,15 +23,23 @@ def insert_invoice(data, db_config):
             data.get("payment_terms"),
         )
 
-        # Execute query
         cursor.execute(query, values)
         conn.commit()
 
+    except errors.UniqueViolation:
+        return "Error: Duplicate Invoice. Invoice number already exists."
+    
     except Exception as e:
-        print("Error:", e)
-
+        return f"Database Error: {str(e)}"
+    
     finally:
-        if 'cursor' in locals():  # ✅ Ensure cursor exists before closing
+        if 'cursor' in locals():
             cursor.close()
         if 'conn' in locals():
             conn.close()
+    
+    return "Success"
+
+
+
+
