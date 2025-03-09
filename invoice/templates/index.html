@@ -76,7 +76,7 @@
                             </div>
                         </form>
                         
-                        <!-- Show files in upload folder -->
+                        
                         <div class="file-list mt-4">
                             <h5>Files Ready to Process</h5>
                             {% if temp_files %}
@@ -137,8 +137,7 @@
         function updateFileDisplay() {
             if (fileInput.files.length > 0) {
                 selectedFile.innerHTML = `<div class="alert alert-success">Selected: ${fileInput.files[0].name}</div>`;
-                // Auto submit form when file is selected
-                // uploadForm.submit();
+                
             } else {
                 selectedFile.innerHTML = '';
             }

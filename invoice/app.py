@@ -30,7 +30,6 @@ def index():
     if 'processed_invoices' in session:
         session.pop('processed_invoices')
     
-    # Get list of files currently in the temp folder
     temp_files = []
     for filename in os.listdir(UPLOAD_FOLDER):
         if allowed_file(filename):
@@ -61,7 +60,7 @@ def upload_file():
 
 @app.route('/process_invoices', methods=['POST'])
 def process_invoices():
-    # Get all files from the temp folder
+    
     uploaded_files = []
     for filename in os.listdir(UPLOAD_FOLDER):
         if allowed_file(filename):
@@ -74,11 +73,14 @@ def process_invoices():
     
     processed_invoices = []
     
-    # Process each uploaded file
     for filepath in uploaded_files:
         try:
             extracted_text = extract_text(filepath)
             
+            if not extracted_text.strip():
+                raise ValueError("OCR failed to extract text. Please check the file quality.")
+
+
             user_prompt = f'''The following is the extracted text from an invoice:
 "{extracted_text}"
 Convert this extracted text into a structured JSON format, ensuring appropriate keys for:
@@ -111,8 +113,8 @@ If any field is missing, return `null`. The JSON output should follow this struc
 Provide the JSON output directly, without any additional text or code blocks.
 '''
             invoice_json = gemini_json_output(user_prompt)
-            print(invoice_json)
-            if not invoice_json:  # Check if JSON output is empty
+            
+            if not invoice_json:  
                 raise ValueError("Data extraction failed. No JSON output received.")
 
             if isinstance(invoice_json, dict):
@@ -123,12 +125,12 @@ Provide the JSON output directly, without any additional text or code blocks.
                 except json.JSONDecodeError:
                     raise ValueError("Invalid JSON format received.")
 
-            if not data.get("invoice_number"):  # Check if invoice_number is missing
+            if not data.get("invoice_number"):  
                 raise ValueError("Invoice number not found in extracted data.")
 
             insert_result = insert_invoice(data, DB_CONFIG)
 
-            if insert_result != "Success":  # If insert_invoice() returns an error
+            if insert_result != "Success":  
                 raise ValueError(f"Database error: {insert_result}")
 
             processed_result = {
@@ -154,10 +156,10 @@ Provide the JSON output directly, without any additional text or code blocks.
             }
             processed_invoices.append(processed_result)
     
-    # Store processing results in session
+    
     session['processed_invoices'] = processed_invoices
     
-    # Clean up the temp folder after processing
+    
     for filepath in uploaded_files:
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -166,7 +168,7 @@ Provide the JSON output directly, without any additional text or code blocks.
 
 @app.route('/clear_uploads', methods=['POST'])
 def clear_uploads():
-    # Clear all files from the temp folder
+    
     for filename in os.listdir(UPLOAD_FOLDER):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if os.path.isfile(filepath):

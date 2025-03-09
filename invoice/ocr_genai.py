@@ -1,6 +1,6 @@
 import google.generativeai as genai
 import json
-#import mimetypes
+
 
 
 # Configure API Key
