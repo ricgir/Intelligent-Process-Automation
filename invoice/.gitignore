@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 
 # Ignore Virtual Environment
+invoice/invoice/
 venv/
 env/
 .env/
