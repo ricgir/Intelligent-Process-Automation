@@ -4,6 +4,8 @@ __pycache__/
 
 # Ignore Virtual Environment
 invoice/invoice/
+invoice/lib64
+invoice/share/
 venv/
 env/
 .env/
