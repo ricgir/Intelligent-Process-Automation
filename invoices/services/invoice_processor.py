@@ -68,6 +68,7 @@ def save_invoice_dict(data, original_filename=None):
             total_amount=clean_decimal(data.get("total_amount")),
             payment_terms=data.get("payment_terms"),
             original_filename=original_filename,
+            invoice_file=data.get("invoice_file"),
             status='Success',
             raw_json=data
         )
