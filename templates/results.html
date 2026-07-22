@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Results - Django Framework</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">Processed Invoices Directory</h3>
+            <div>
+                <a href="/" class="btn btn-outline-primary me-2">← Upload Invoice</a>
+                <a href="/admin/invoices/invoice/" class="btn btn-primary" target="_blank">Open Admin Panel</a>
+            </div>
+        </div>
+
+        {% if invoices %}
+            {% for inv in invoices %}
+            <div class="card mb-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-success me-2">{{ inv.status }}</span>
+                            <strong class="fs-5">Invoice #{{ inv.invoice_number }}</strong>
+                            <span class="text-muted ms-2">({{ inv.original_filename|default:"N/A" }})</span>
+                        </div>
+                        <span class="text-muted small">Processed: {{ inv.created_at|date:"Y-m-d H:i" }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3"><strong>Vendor:</strong> {{ inv.vendor_name|default:"N/A" }}</div>
+                        <div class="col-md-3"><strong>Customer:</strong> {{ inv.customer_name|default:"N/A" }}</div>
+                        <div class="col-md-3"><strong>Invoice Date:</strong> {{ inv.invoice_date|default:"N/A" }}</div>
+                        <div class="col-md-3"><strong>Due Date:</strong> {{ inv.due_date|default:"N/A" }}</div>
+                        <div class="col-md-3"><strong>Subtotal:</strong> ${{ inv.subtotal|default:"0.00" }}</div>
+                        <div class="col-md-3"><strong>Taxes:</strong> ${{ inv.taxes|default:"0.00" }}</div>
+                        <div class="col-md-3"><strong>Total Amount:</strong> <span class="text-success fw-bold">${{ inv.total_amount|default:"0.00" }}</span></div>
+                        <div class="col-md-3"><strong>Payment Terms:</strong> {{ inv.payment_terms|default:"N/A" }}</div>
+                    </div>
+
+                    {% if inv.line_items.all %}
+                    <h6 class="fw-bold mt-4 mb-2">Line Items</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th style="width: 100px;">Qty</th>
+                                    <th style="width: 120px;">Unit Price</th>
+                                    <th style="width: 120px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in inv.line_items.all %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td>{{ item.quantity|default:"--" }}</td>
+                                    <td>${{ item.unit_price|default:"0.00" }}</td>
+                                    <td class="fw-semibold">${{ item.total|default:"0.00" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card text-center p-5">
+                <p class="text-muted mb-3">No invoices stored in database yet.</p>
+                <div><a href="/" class="btn btn-primary">Upload First Invoice</a></div>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

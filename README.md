@@ -1,95 +1,118 @@
-# Intelligent-Process-Automation
+# Intelligent Process Automation — Django Invoice Processing System
 
-## Overview
-This project automates the extraction and processing of invoice data from invoice images and PDFs. It utilizes **Pytesseract** to extract text from invoice images (PNG, JPG, JPEG) and **pdfplumber** to extract text from PDFs. The extracted text is then passed to the **Gemini-1.5-Pro** model via the Gemini API, which processes the text and structures the information into a JSON format. The structured data is subsequently stored in a **PostgreSQL** database deployed on **Railway** (`railway`) within the `invoices` table. The entire application runs within a **Python virtual environment** (`invoice virtual environment`) to ensure dependency isolation and maintainability.
+An enterprise-grade **Django + Django REST Framework (DRF)** application that automates invoice text extraction (OCR via `pytesseract` and `pdfplumber`), structures data using **Google Gemini 1.5 Pro AI**, and stores relational header and line-item records in a **Local PostgreSQL** database.
 
-
-## Features
-- Extracts text from invoice images using **Pytesseract**.
-- Extracts text from PDF invoices using **pdfplumber**.
-- Processes and structures extracted text into JSON using **Gemini-1.5-Pro**.
-- Stores structured invoice data in a **PostgreSQL** database deployed on **Railway**.
-- Runs within a Python virtual environment for better dependency management.
 ---
 
-## Setup and Installation
+## Architecture Overview
 
-### **1. Clone the Repository**
-To get started, clone the repository and navigate into the project directory:
-```sh
- git clone https://github.com/ricgir/Intelligent-Process-Automation.git
- cd Intelligent-Process-Automation
+```
+Intelligent-Process-Automation/
+├── .env                       # Environment variables (DB credentials, Gemini API key)
+├── .gitignore                 # Excludes secrets, cache, and media files
+├── manage.py                  # Django CLI entry point
+├── requirements.txt           # Django, DRF, PostgreSQL & AI dependencies
+├── check_db.py                # Database connection utility script
+├── invoice_system/            # Django project settings & root URLs
+│   ├── settings.py
+│   └── urls.py
+├── invoices/                  # Django app module
+│   ├── models.py              # Invoice & InvoiceLineItem ORM models
+│   ├── admin.py               # Admin interface registration
+│   ├── serializers.py         # DRF serializers (Header + Line Items)
+│   ├── views.py               # DRF ViewSet & HTML template views
+│   ├── services/              # Business logic isolation
+│   │   ├── ocr_service.py     # Pytesseract & pdfplumber OCR
+│   │   ├── gemini_service.py  # Gemini 1.5 Pro AI integration
+│   │   └── invoice_processor.py # Database persistence orchestrator
+│   └── tests.py               # Automated unit & API tests
+└── templates/                 # Responsive HTML UI templates
+    ├── index.html
+    └── results.html
 ```
 
-### **2. Set Up the Virtual Environment**
-It is recommended to run the application inside a virtual environment to avoid conflicts between dependencies.
-```sh
-python3 -m venv invoice
-source invoice/bin/activate  # On Windows, use `invoice\Scripts\activate`
+---
+
+## Setup & Installation
+
+### 1. Set Up Virtual Environment
+```bash
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### **3. Install Dependencies**
-Install the necessary dependencies from the `requirements.txt` file:
-```sh
-cd invoice
+### 2. Install Dependencies
+```bash
 pip install -r requirements.txt
+```
+
+### 3. Environment Secrets Configuration (`.env`)
+Create or edit `.env` in the project root:
+```env
+SECRET_KEY=your-django-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Local PostgreSQL Database Credentials
+DB_NAME=invoice_db
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+
+# Gemini AI API Key
+GEMINI_API_KEY=[GCP_API_KEY]
+```
+
+---
+
+## Database Migrations & Superuser
+
+### 1. Apply Database Migrations
+Ensure PostgreSQL service is running locally, then execute:
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### 2. Create Admin Superuser
+```bash
+python manage.py createsuperuser
 ```
 
 ---
 
 ## Running the Application
 
-### **1. Activate the Virtual Environment**
-Before running the application, ensure the virtual environment is activated:
-```sh
-source invoice/bin/activate  # On Windows, use `invoice\Scripts\activate`
-cd invoice
+Start the Django development server:
+```bash
+python manage.py runserver
 ```
 
-### **2. Run the Application**
-To start processing invoices, run the main application script:
-```sh
-python app.py
+- **Web Dashboard**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **REST API Endpoints**: [http://127.0.0.1:8000/api/invoices/](http://127.0.0.1:8000/api/invoices/)
+- **Django Admin GUI**: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+
+---
+
+## REST API Usage
+
+### Upload & Process Invoice Document
+```bash
+curl -X POST http://127.0.0.1:8000/api/invoices/upload/ \
+  -F "file=@sample_invoice.pdf"
+```
+
+### List All Stored Invoices
+```bash
+curl -H "Accept: application/json" http://127.0.0.1:8000/api/invoices/
 ```
 
 ---
 
-## Viewing Stored Data in PostgreSQL
+## Running Tests
 
-### **1. Access the Database**
-To interact with the database and view stored invoices, access PostgreSQL:
-```sh
-psql "postgresql://postgres:lKyPkdyoIkhLCpUgaMNgVYZbmsdJGAAo@hopper.proxy.rlwy.net:15298/railway"
+Execute the automated test suite:
+```bash
+python manage.py test invoices
 ```
-
-### **2. View Stored Invoices**
-Retrieve all stored invoice records:
-```sql
-SELECT * FROM invoices;
-```
-
-### **3. Query Specific Data**
-To filter invoices by date or invoice number:
-```sql
-SELECT * FROM invoices WHERE date = '2025-01-01';
-SELECT * FROM invoices WHERE invoice_number = 'INV-1001';
-```
-
----
-
-## Troubleshooting
-
-### **Common Issues & Fixes**
-
-- **Virtual environment not activating:** Use the correct command for your OS (`source invoice/bin/activate` on macOS/Linux, `invoice\Scripts\activate` on Windows).
-- **Missing dependencies:** Run `pip install -r requirements.txt` to reinstall required packages.
-
----
-
-## Contributing
-We welcome contributions! Fork the repository, create a feature branch, and submit a pull request.
-
----
-
-## License
-This project is licensed under the MIT License.

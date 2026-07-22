@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Processing System — Modern Verification Workflow</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        }
+        body { background-color: var(--bg-color); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .upload-area {
+            border: 2px dashed #93c5fd;
+            border-radius: 16px;
+            padding: 35px 20px;
+            text-align: center;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.25s ease-in-out;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            background: #eff6ff;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        .card-custom {
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--card-shadow);
+            background: #ffffff;
+        }
+        .hide { display: none !important; }
+        .table-custom th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .spinner-glow {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+                <i class="fa-solid fa-file-invoice-dollar text-primary fs-4"></i>
+                <span>Intelligent Invoice Processing</span>
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/admin/" class="btn btn-outline-light btn-sm rounded-pill px-3" target="_blank"><i class="fa-solid fa-user-shield me-1"></i> Django Admin</a>
+                <a href="/api/invoices/" class="btn btn-primary btn-sm rounded-pill px-3 fw-medium" target="_blank"><i class="fa-solid fa-code me-1"></i> REST API</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+
+        <!-- Notification Banner -->
+        <div id="alertContainer"></div>
+
+        <!-- 1. Document Upload Card -->
+        <div class="card card-custom mb-4" id="uploadCard">
+            <div class="card-body p-4 p-md-5">
+                <div class="mb-4 text-center">
+                    <h4 class="fw-bold text-dark mb-1">Step 1: Upload Invoice Document</h4>
+                    <p class="text-muted">Upload PDF or Image. System extracts OCR & Gemini AI structured data for verification before saving to Database.</p>
+                </div>
+                
+                <div class="upload-area" id="dropZone">
+                    <i class="fa-solid fa-cloud-arrow-up text-primary display-4 mb-3"></i>
+                    <h6 class="fw-bold mb-1">Click to upload or drag and drop</h6>
+                    <p class="text-muted small mb-0">Supported Formats: PDF, PNG, JPG, JPEG</p>
+                    <input type="file" id="invoiceFileInput" class="hide" accept=".png,.jpg,.jpeg,.pdf">
+                </div>
+
+                <div id="fileSelectionBadge" class="mt-3 text-center hide">
+                    <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill" id="selectedFileName"></span>
+                </div>
+
+                <div class="d-flex justify-content-center mt-4">
+                    <button class="btn btn-primary btn-lg px-5 rounded-pill fw-bold" id="extractBtn" disabled>
+                        <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Extract & Review Invoice
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Loading State Indicator -->
+        <div class="card card-custom mb-4 py-5 text-center hide" id="loadingCard">
+            <div class="card-body">
+                <div class="spinner-border spinner-glow text-primary mb-3" role="status"></div>
+                <h5 class="fw-bold text-dark mb-1">Processing Document...</h5>
+                <p class="text-muted mb-0">Running OCR text extraction and Gemini AI structured parsing.</p>
+            </div>
+        </div>
+
+        <!-- 3. Systematic Verification & Review Panel -->
+        <div class="card card-custom mb-4 border-primary hide" id="reviewCard">
+            <div class="card-header bg-primary text-white py-3 px-4 d-flex justify-content-between align-items-center rounded-top">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clipboard-check me-2"></i> Step 2: Verify & Review Extracted Data</h5>
+                <span class="badge bg-light text-primary fw-bold" id="extractedFilenameBadge">sample.pdf</span>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <div class="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-info fs-5"></i>
+                    <span>Review the extracted data below. You can edit any field if needed, then click <strong>"Accept & Save to Database"</strong>.</span>
+                </div>
+
+                <!-- Structured Header Fields Form -->
+                <h6 class="fw-bold text-secondary text-uppercase mb-3 fs-7"><i class="fa-solid fa-heading me-1"></i> Invoice Header Information</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Invoice Number</label>
+                        <input type="text" class="form-control fw-bold" id="rev_invoice_number">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Vendor Name</label>
+                        <input type="text" class="form-control" id="rev_vendor_name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Customer Name</label>
+                        <input type="text" class="form-control" id="rev_customer_name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Invoice Date</label>
+                        <input type="text" class="form-control" id="rev_invoice_date" placeholder="YYYY-MM-DD">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Due Date</label>
+                        <input type="text" class="form-control" id="rev_due_date" placeholder="YYYY-MM-DD">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Payment Terms</label>
+                        <input type="text" class="form-control" id="rev_payment_terms">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Subtotal ($)</label>
+                        <input type="number" step="0.01" class="form-control" id="rev_subtotal">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary">Taxes ($)</label>
+                        <input type="number" step="0.01" class="form-control" id="rev_taxes">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-secondary text-primary">Total Amount ($)</label>
+                        <input type="number" step="0.01" class="form-control border-primary fw-bold text-primary fs-5" id="rev_total_amount">
+                    </div>
+                </div>
+
+                <!-- Structured Line Items Table -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-secondary text-uppercase mb-0 fs-7"><i class="fa-solid fa-list-check me-1"></i> Extracted Line Items</h6>
+                    <button class="btn btn-outline-primary btn-sm rounded-pill" id="addLineItemBtn">
+                        <i class="fa-solid fa-plus me-1"></i> Add Line Item
+                    </button>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered align-middle table-custom" id="lineItemsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Item Description</th>
+                                <th style="width: 120px;">Quantity</th>
+                                <th style="width: 150px;">Unit Price ($)</th>
+                                <th style="width: 150px;">Total ($)</th>
+                                <th style="width: 60px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lineItemsTbody">
+                            <!-- Dynamic Line Item Rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Primary Action Buttons -->
+                <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                    <button class="btn btn-outline-secondary px-4 rounded-pill fw-semibold" id="discardBtn">
+                        <i class="fa-solid fa-xmark me-1"></i> Discard
+                    </button>
+                    <button class="btn btn-success btn-lg px-5 rounded-pill fw-bold shadow-sm" id="acceptSaveBtn">
+                        <i class="fa-solid fa-circle-check me-2"></i> Accept & Save to Database
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Stored Invoices Directory Table -->
+        <div class="card card-custom">
+            <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-database text-primary me-2"></i> Stored Invoices in Database</h5>
+                <a href="/results/" class="btn btn-outline-primary btn-sm rounded-pill px-3">View Full Directory</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="invoicesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Invoice #</th>
+                                <th>Vendor</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Invoice Date</th>
+                                <th>Status</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody">
+                            {% for inv in invoices %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-primary">{{ inv.invoice_number }}</td>
+                                <td>{{ inv.vendor_name|default:"--" }}</td>
+                                <td>{{ inv.customer_name|default:"--" }}</td>
+                                <td class="fw-bold">${{ inv.total_amount|default:"0.00" }}</td>
+                                <td>{{ inv.invoice_date|default:"--" }}</td>
+                                <td><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Saved</span></td>
+                                <td class="pe-4 text-end">
+                                    <a href="/api/invoices/{{ inv.id }}/" class="btn btn-sm btn-outline-secondary rounded-pill" target="_blank">
+                                        <i class="fa-solid fa-code me-1"></i> JSON
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr id="emptyRow">
+                                <td colspan="7" class="p-4 text-center text-muted">No invoices stored in database yet. Process an invoice above to populate records.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('invoiceFileInput');
+        const extractBtn = document.getElementById('extractBtn');
+        const fileSelectionBadge = document.getElementById('fileSelectionBadge');
+        const selectedFileName = document.getElementById('selectedFileName');
+        
+        const uploadCard = document.getElementById('uploadCard');
+        const loadingCard = document.getElementById('loadingCard');
+        const reviewCard = document.getElementById('reviewCard');
+        const extractedFilenameBadge = document.getElementById('extractedFilenameBadge');
+        const lineItemsTbody = document.getElementById('lineItemsTbody');
+        const acceptSaveBtn = document.getElementById('acceptSaveBtn');
+        const discardBtn = document.getElementById('discardBtn');
+        const addLineItemBtn = document.getElementById('addLineItemBtn');
+        const alertContainer = document.getElementById('alertContainer');
+
+        let currentExtractedData = null;
+
+        // --- File Pick & Drag/Drop Events ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelection();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelection);
+
+        function handleFileSelection() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                selectedFileName.textContent = `File selected: ${file.name}`;
+                fileSelectionBadge.classList.remove('hide');
+                extractBtn.disabled = false;
+            } else {
+                fileSelectionBadge.classList.add('hide');
+                extractBtn.disabled = true;
+            }
+        }
+
+        // --- Step 1: Trigger OCR & Gemini AI Extraction ---
+        extractBtn.addEventListener('click', async () => {
+            if (!fileInput.files.length) return;
+            const file = fileInput.files[0];
+
+            uploadCard.classList.add('hide');
+            loadingCard.classList.remove('hide');
+            reviewCard.classList.add('hide');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/invoices/extract/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCsrfToken() },
+                    body: formData
+                });
+
+                const result = await response.json();
+                loadingCard.classList.add('hide');
+
+                if (response.ok && result.success) {
+                    currentExtractedData = result.extracted_data;
+                    populateReviewForm(result.extracted_data, file.name);
+                    reviewCard.classList.remove('hide');
+                } else {
+                    showAlert(`Extraction Error: ${result.error || 'Failed to parse invoice'}`, 'danger');
+                    uploadCard.classList.remove('hide');
+                }
+            } catch (err) {
+                loadingCard.classList.add('hide');
+                uploadCard.classList.remove('hide');
+                showAlert(`Network Error: ${err.message}`, 'danger');
+            }
+        });
+
+        // --- Populate Verification Form ---
+        function populateReviewForm(data, filename) {
+            extractedFilenameBadge.textContent = filename;
+            document.getElementById('rev_invoice_number').value = data.invoice_number || '';
+            document.getElementById('rev_vendor_name').value = data.vendor_name || '';
+            document.getElementById('rev_customer_name').value = data.customer_name || '';
+            document.getElementById('rev_invoice_date').value = data.invoice_date || '';
+            document.getElementById('rev_due_date').value = data.due_date || '';
+            document.getElementById('rev_payment_terms').value = data.payment_terms || '';
+            document.getElementById('rev_subtotal').value = data.subtotal || '';
+            document.getElementById('rev_taxes').value = data.taxes || '';
+            document.getElementById('rev_total_amount').value = data.total_amount || '';
+
+            lineItemsTbody.innerHTML = '';
+            const items = data.line_items || [];
+            if (items.length === 0) {
+                addLineItemRow();
+            } else {
+                items.forEach((item, index) => addLineItemRow(item, index + 1));
+            }
+        }
+
+        // --- Line Item Table Manipulations ---
+        function addLineItemRow(item = {}, index = null) {
+            const rowCount = index || (lineItemsTbody.children.length + 1);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center text-muted fw-bold row-num">${rowCount}</td>
+                <td><input type="text" class="form-control form-control-sm item-desc" value="${item.description || ''}"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm item-qty" value="${item.quantity || ''}"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm item-price" value="${item.unit_price || ''}"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm item-total" value="${item.total || ''}"></td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle remove-row-btn">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tr.querySelector('.remove-row-btn').addEventListener('click', () => {
+                tr.remove();
+                reindexRows();
+            });
+            lineItemsTbody.appendChild(tr);
+        }
+
+        function reindexRows() {
+            Array.from(lineItemsTbody.children).forEach((tr, i) => {
+                tr.querySelector('.row-num').textContent = i + 1;
+            });
+        }
+
+        addLineItemBtn.addEventListener('click', () => addLineItemRow());
+
+        // --- Step 2: Accept & Save to Database ---
+        acceptSaveBtn.addEventListener('click', async () => {
+            // Collect verified payload
+            const payload = {
+                original_filename: extractedFilenameBadge.textContent,
+                invoice_number: document.getElementById('rev_invoice_number').value,
+                vendor_name: document.getElementById('rev_vendor_name').value,
+                customer_name: document.getElementById('rev_customer_name').value,
+                invoice_date: document.getElementById('rev_invoice_date').value,
+                due_date: document.getElementById('rev_due_date').value,
+                payment_terms: document.getElementById('rev_payment_terms').value,
+                subtotal: document.getElementById('rev_subtotal').value,
+                taxes: document.getElementById('rev_taxes').value,
+                total_amount: document.getElementById('rev_total_amount').value,
+                line_items: []
+            };
+
+            Array.from(lineItemsTbody.children).forEach(tr => {
+                const desc = tr.querySelector('.item-desc').value;
+                if (desc.trim()) {
+                    payload.line_items.push({
+                        description: desc,
+                        quantity: tr.querySelector('.item-qty').value,
+                        unit_price: tr.querySelector('.item-price').value,
+                        total: tr.querySelector('.item-total').value
+                    });
+                }
+            });
+
+            acceptSaveBtn.disabled = true;
+            acceptSaveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving to Database...`;
+
+            try {
+                const response = await fetch('/api/invoices/confirm/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                acceptSaveBtn.disabled = false;
+                acceptSaveBtn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Accept & Save to Database`;
+
+                if (response.ok && result.success) {
+                    showAlert(`Success! Invoice #${result.invoice.invoice_number} saved to Database.`, 'success');
+                    prependInvoiceRow(result.invoice);
+                    reviewCard.classList.add('hide');
+                    uploadCard.classList.remove('hide');
+                    fileInput.value = '';
+                    handleFileSelection();
+                } else {
+                    showAlert(`Save Error: ${result.error || 'Failed to save invoice'}`, 'danger');
+                }
+            } catch (err) {
+                acceptSaveBtn.disabled = false;
+                acceptSaveBtn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Accept & Save to Database`;
+                showAlert(`Network Error: ${err.message}`, 'danger');
+            }
+        });
+
+        // --- Discard Action ---
+        discardBtn.addEventListener('click', () => {
+            reviewCard.classList.add('hide');
+            uploadCard.classList.remove('hide');
+            fileInput.value = '';
+            handleFileSelection();
+        });
+
+        // --- UI Utilities ---
+        function prependInvoiceRow(inv) {
+            const tbody = document.getElementById('invoicesTableBody');
+            const emptyRow = document.getElementById('emptyRow');
+            if (emptyRow) emptyRow.remove();
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="ps-4 fw-bold text-primary">${inv.invoice_number || '--'}</td>
+                <td>${inv.vendor_name || '--'}</td>
+                <td>${inv.customer_name || '--'}</td>
+                <td class="fw-bold">$${inv.total_amount || '0.00'}</td>
+                <td>${inv.invoice_date || '--'}</td>
+                <td><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Saved</span></td>
+                <td class="pe-4 text-end">
+                    <a href="/api/invoices/${inv.id}/" class="btn btn-sm btn-outline-secondary rounded-pill" target="_blank">
+                        <i class="fa-solid fa-code me-1"></i> JSON
+                    </a>
+                </td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                    <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        function getCsrfToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === ('csrftoken=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue || '';
+        }
+    </script>
+</body>
+</html>

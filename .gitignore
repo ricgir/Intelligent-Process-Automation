@@ -1,0 +1,21 @@
+# Secrets & Environment
+.env
+*.env
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Database & Uploads
+db.sqlite3
+temp_uploads/
+media/
+
+# System files
+.DS_Store
