@@ -389,9 +389,9 @@
 
         // --- Step 2: Accept & Save to Database ---
         acceptSaveBtn.addEventListener('click', async () => {
-            // Collect verified payload
             const payload = {
                 original_filename: extractedFilenameBadge.textContent,
+                invoice_file: currentExtractedData ? currentExtractedData.invoice_file : null,
                 invoice_number: document.getElementById('rev_invoice_number').value,
                 vendor_name: document.getElementById('rev_vendor_name').value,
                 customer_name: document.getElementById('rev_customer_name').value,

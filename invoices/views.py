@@ -24,7 +24,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         POST /api/invoices/extract/
         Runs OCR & Gemini AI extraction on uploaded file.
-        Returns extracted data preview WITHOUT saving to database.
+        Saves file to S3/default_storage permanently.
+        Returns extracted data preview WITHOUT saving DB metadata yet.
         """
         file_obj = request.FILES.get('file') or request.FILES.get('files')
         if not file_obj:
@@ -37,7 +38,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         saved_path = fs.path(saved_name)
 
         try:
+            # 1. OCR + AI extraction locally
             extracted_data = extract_invoice_data(saved_path, original_filename=file_obj.name)
+            
+            # 2. Persist file permanently to S3/default_storage
+            from django.core.files.storage import default_storage
+            with open(saved_path, 'rb') as f:
+                perm_saved_name = default_storage.save(f"invoices/{file_obj.name}", f)
+            
+            # Add permanent URL/path reference to the data dict
+            extracted_data['invoice_file'] = perm_saved_name
+            
             return Response({
                 'success': True,
                 'extracted_data': extracted_data
@@ -52,7 +63,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def confirm(self, request):
         """
         POST /api/invoices/confirm/
-        Accepts verified JSON payload (header + line items) and persists to Database.
+        Accepts verified JSON payload (header + line items + invoice_file path) and persists to Database.
         """
         data = request.data
         if not data:
@@ -89,7 +100,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             saved_name = fs.save(file_obj.name, file_obj)
             saved_path = fs.path(saved_name)
             try:
-                invoice = process_single_invoice_file(saved_path, original_filename=file_obj.name)
+                # 1. OCR + AI extraction locally
+                data = extract_invoice_data(saved_path, original_filename=file_obj.name)
+                
+                # 2. Persist file permanently to S3/default_storage
+                from django.core.files.storage import default_storage
+                with open(saved_path, 'rb') as f:
+                    perm_saved_name = default_storage.save(f"invoices/{file_obj.name}", f)
+                data['invoice_file'] = perm_saved_name
+                
+                # 3. Save DB models
+                invoice = save_invoice_dict(data, original_filename=file_obj.name)
                 results.append(InvoiceSerializer(invoice).data)
             except Exception as e:
                 errors.append({'filename': file_obj.name, 'error': str(e)})

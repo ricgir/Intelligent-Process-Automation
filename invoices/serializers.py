@@ -24,6 +24,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'total_amount',
             'payment_terms',
             'original_filename',
+            'invoice_file',
             'status',
             'raw_json',
             'created_at',

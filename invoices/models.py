@@ -12,6 +12,7 @@ class Invoice(models.Model):
     payment_terms = models.CharField(max_length=255, null=True, blank=True)
     
     original_filename = models.CharField(max_length=255, null=True, blank=True)
+    invoice_file = models.FileField(upload_to='invoices/', null=True, blank=True)
     status = models.CharField(max_length=50, default='Success')
     raw_json = models.JSONField(null=True, blank=True, help_text="Full raw JSON from AI extraction")
     
