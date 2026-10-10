@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: invoice-processing-app
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn invoice_system.wsgi:application"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: invoice-postgres
+          property: connectionString
+
+databases:
+  - name: invoice-postgres
+    databaseName: invoice_db
+    user: postgres
+    plan: free

@@ -13,7 +13,16 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-me')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -27,6 +36,7 @@ INSTALLED_APPS = [
     # Third-party packages
     'rest_framework',
     'corsheaders',
+    'django_extensions',
     
     # Local Apps
     'invoices.apps.InvoicesConfig',
@@ -35,6 +45,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,10 +74,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'invoice_system.wsgi.application'
 
-# Database Configuration (Local PostgreSQL with automatic SQLite fallback)
+# Database Configuration (Render DATABASE_URL / Local PostgreSQL with automatic SQLite fallback)
+DATABASE_URL = os.getenv('DATABASE_URL')
 USE_POSTGRES = os.getenv('USE_POSTGRES', 'False').lower() in ('true', '1', 't')
 
-if USE_POSTGRES:
+if DATABASE_URL:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif USE_POSTGRES:
     # Verify if PostgreSQL port is open/accepting connections
     import socket
     postgres_host = os.getenv('DB_HOST', 'localhost')
@@ -112,6 +133,7 @@ else:
 
 
 
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -134,36 +156,54 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# AWS S3 Storage Settings
-AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-if AWS_STORAGE_BUCKET_NAME:
-    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
-    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-    
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {
-                "location": "media",
-            },
-        },
-        "staticfiles": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {
-                "location": "static",
-            },
-        },
-    }
-    # Static & Media URL overrides for S3
-    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-else:
-    # Static files (CSS, JavaScript, Images)
-    STATIC_URL = '/static/'
-    # Media files (Uploaded Invoices)
-    MEDIA_URL = '/media/'
+# ==============================================================================
+# AWS S3 Storage Settings (COMMENTED OUT - AWS plan expired)
+# ==============================================================================
+# AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+# if AWS_STORAGE_BUCKET_NAME:
+#     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+#     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+#     AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
+#     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+#     
+#     STORAGES = {
+#         "default": {
+#             "BACKEND": "storages.backends.s3.S3Storage",
+#             "OPTIONS": {
+#                 "location": "media",
+#             },
+#         },
+#         "staticfiles": {
+#             "BACKEND": "storages.backends.s3.S3Storage",
+#             "OPTIONS": {
+#                 "location": "static",
+#             },
+#         },
+#     }
+#     # Static & Media URL overrides for S3
+#     STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+#     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+# else:
+#     # Static files (CSS, JavaScript, Images)
+#     STATIC_URL = '/static/'
+#     # Media files (Uploaded Invoices)
+#     MEDIA_URL = '/media/'
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+# Media files (Uploaded Invoices)
+MEDIA_URL = '/media/'
+
+# WhiteNoise storage for static files & local FileSystemStorage for media files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 STATIC_ROOT = BASE_DIR / 'staticfiles'

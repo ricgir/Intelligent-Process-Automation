@@ -12,10 +12,12 @@ venv/
 .venv/
 env/
 
-# Database & Uploads
+# Static & Uploads
 db.sqlite3
 temp_uploads/
 media/
+staticfiles/
+
 
 # System files
 .DS_Store
