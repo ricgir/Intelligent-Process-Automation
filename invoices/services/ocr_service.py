@@ -1,8 +1,15 @@
 import os
+import shutil
 import pdfplumber
 from pdf2image import convert_from_path
 import pytesseract
 from PIL import Image
+
+# Auto-detect tesseract binary path
+tesseract_path = shutil.which("tesseract") or "/usr/bin/tesseract"
+if os.path.exists(tesseract_path):
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path
+
 
 def extract_text_from_file(file_path):
     """

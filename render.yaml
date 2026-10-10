@@ -1,13 +1,9 @@
 services:
   - type: web
     name: invoice-processing-app
-    runtime: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn invoice_system.wsgi:application"
+    runtime: docker
     plan: free
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
