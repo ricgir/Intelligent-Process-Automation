@@ -22,5 +22,6 @@ services:
 databases:
   - name: invoice-postgres
     databaseName: invoice_db
-    user: postgres
+    user: invoice_user
     plan: free
+
