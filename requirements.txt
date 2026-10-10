@@ -3,6 +3,7 @@ djangorestframework>=3.14.0
 python-dotenv>=1.0.0
 psycopg2-binary>=2.9.9
 django-cors-headers>=4.3.0
+django-extensions>=3.2.3
 pytesseract>=0.3.10
 pdfplumber>=0.11.0
 pdf2image>=1.17.0
