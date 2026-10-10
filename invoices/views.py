@@ -2,6 +2,8 @@ import os
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,7 +17,9 @@ from invoices.services.invoice_processor import (
 )
 
 # --- DRF REST API ViewSet ---
+@method_decorator(csrf_exempt, name='dispatch')
 class InvoiceViewSet(viewsets.ModelViewSet):
+
     queryset = Invoice.objects.all().order_by('-created_at')
     serializer_class = InvoiceSerializer
 
@@ -127,11 +131,14 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
 
 # --- HTML Template Web Views ---
+@ensure_csrf_cookie
 def index_view(request):
     invoices = Invoice.objects.all().order_by('-created_at')[:10]
     return render(request, 'index.html', {'invoices': invoices})
 
 
+@ensure_csrf_cookie
 def results_view(request):
     invoices = Invoice.objects.all().order_by('-created_at')
     return render(request, 'results.html', {'invoices': invoices})
+

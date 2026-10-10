@@ -316,8 +316,20 @@
                     body: formData
                 });
 
-                const result = await response.json();
                 loadingCard.classList.add('hide');
+
+                // Safely parse JSON — the server may return HTML on a 403/500 error
+                let result;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    uploadCard.classList.remove('hide');
+                    showAlert(`Server Error (${response.status}): The server returned an unexpected response. Check GEMINI_API_KEY and server logs.`, 'danger');
+                    console.error('Non-JSON response body:', text);
+                    return;
+                }
 
                 if (response.ok && result.success) {
                     currentExtractedData = result.extracted_data;
@@ -333,6 +345,7 @@
                 showAlert(`Network Error: ${err.message}`, 'danger');
             }
         });
+
 
         // --- Populate Verification Form ---
         function populateReviewForm(data, filename) {
@@ -429,9 +442,20 @@
                     body: JSON.stringify(payload)
                 });
 
-                const result = await response.json();
                 acceptSaveBtn.disabled = false;
                 acceptSaveBtn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Accept & Save to Database`;
+
+                // Safely parse JSON — server may return HTML on 403/500
+                let result;
+                const confirmContentType = response.headers.get('content-type') || '';
+                if (confirmContentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    showAlert(`Server Error (${response.status}): Unexpected response. Check server logs.`, 'danger');
+                    console.error('Non-JSON confirm response:', text);
+                    return;
+                }
 
                 if (response.ok && result.success) {
                     showAlert(`Success! Invoice #${result.invoice.invoice_number} saved to Database.`, 'success');
